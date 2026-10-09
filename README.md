@@ -1,28 +1,63 @@
-# Averaging Connectivity and Mapping Dysconnectivity from Lesions
+# Averaging Connectivity and Mapping Dysconnectivity from Multiple Sclerosis Lesions
 ## Author: Sophia Kucan
 ## July 2026
 
-This README describes the purpose and how to use the scripts `average_connectivity.py` and `lesion_dysconnectivity.py` from the folder `final`.
+## Overview
 
-## Aim:
 
-- Compute average connectivity across subjects or regions.
-- Map dysconnectivity patterns arising from lesions.
-- Generate readable outputs for downstream analysis.
+# Averaging Connectivity and Mapping Dysconnectivity from MS Lesions
 
-## Workflow:
+**Author:** Sophia Kucan  
+**Date:** July 2026
 
-1. Subject connectivity data.
-2. Use `average_connectivity3.py`.
-3. Group average connectivity matrices.
-4. Use `lesion_dysconnectivity2.py`.
-5. CIFTI lesion dysconnectome.
+## Overview
+
+This repository contains a computational neuroimaging pipeline for investigating structural dysconnectivity associated with multiple sclerosis (MS) lesions.
+
+The pipeline constructs group-average structural connectivity matrices from diffusion tractography data, maps the lesion-associated dysconnectivity onto the cortical surface, and then quantifies the dysconnectivity using several cortical parcellation atlases.
+
+
+## Aim
+
+- Construct group-average structural connectivity matrices across subjects.
+- Estimate lesion-associated structural dysconnectivity.
+- Project dysconnectivity measurements onto the cortical surface.
+- Quantify regional dysconnectivity using Yeo-7, Yeo-17 and Glasser parcellations.
+- Identify cortical regions exceeding a specified dysconnectivity threshold.
+- Construct subject-by-parcel matrices for further statistical analysis.
+
+## Workflow
+
+1. **Group connectivity averaging:** `average_connectivity3.py`
+   - Construct group-average connectivity matrices from subject-level tractography data.
+
+2. **Lesion dysconnectivity mapping:** `lesion_dysconnectivity2.py`
+   - Combine the lesion masks with group connectivity matrices to generate cortical dysconnectome maps.
+
+3. **Cortical parcellation:** `run_all_parcellations2.sh`
+   - Apply Yeo 7, Yeo 17, and Glasser cortical atlases to the dysconnectome maps.
+
+4. **Regional analysis:** `analyse_parcels.py`
+   - Identify cortical parcels exceeding a specified dysconnectivity threshold.
+
+5. **Subject-level matrix construction:** `build_dysconnectivity.py`
+   - Combine individual parcellated dysconnectomes into a subject-by-parcel matrix for any later analysis.
+
+
+
+
+
 
 ## Necessary Packages:
 To run the scripts, a python virtual environment was used. The necessary packages can be installed from `requirements.txt` using:
 ```bash
 pip install -r requirements.txt
 ```
+### Additional Dependencies:
+- Cortical parcellation requires **Connectome Workbench**, which can be accessed via the 'wb_command' command line function.
+- The Yeo 7, Yeo 17, and Glasser atals files also need to be available locally.
+- File paths in 'run_all_parcellations2.sh' are currently configured for the orginal research environment and will need to be updated accordingly before replicating the pipeline elsewhere.
+
 
 
 ## Method Summary:
@@ -32,6 +67,7 @@ For each hemisphere:
 2. The connectivity matrix for each subject is projected onto the union space.
 3. The connectivity matrices are averaged:
 
+$$
 \text{Group average connectivity} =
 \frac{\sum_{i=1}^{N}\text{Connectivity matrix}_{i}}
 {N}
@@ -191,6 +227,110 @@ Open the CIFTI file:
 `wb_view lesion_disconnectome.dscalar.nii`.
 I would recommend viewing this on top of inflated brain maps.
 
+
+## Regional Dysconnectivity Analysis
+
+Now that individual cortical dysconnectome maps have been generated, the pipeline quantifies dysconnectivity at across different parcellation maps with varying levels of detail.
+
+Three cortical parcellation atlases are used:
+
+- **Yeo 7:** Seven functional networks.
+- **Yeo 17:** Seventeen functional networks.
+- **Glasser:** 360 cortical parcels.
+
+This means that lesion-associated dysconnectivity can be investigated at different levels of detail.
+
+The following scripts automate parcellation, identify affected regions, and rewrite the results into matrix form for potential statistical analysis.
+
+
+
+## Script 3 - Cortical Parcellation
+### Aim
+'run_all_parcellations2.sh' automates the cortical parcellation and regional dysconnectivity analysis across all subjects.
+
+### The Script:
+1. Identifies individual subject dysconnectome files ('.dscalar.nii').
+2. Uses Connectome Workbench to parcellate each dysconnecotme using the Yeo 7, Yeo 17, and Glasser atlases.
+3. Generates a parcel-level dysconnectivity map ('.pscalar.nii').
+4. Executes 'analyse_parcels.py' and uses a dysconnectivity threshold of 0.1.
+5. Saves atlas specific affected region reports for each subject.
+
+### Inputs Required
+- Subject-level dysconnectome maps (`.dscalar.nii`).
+- Yeo 7, Yeo 17 and Glasser atlas files (`.dlabel.nii`).
+- Connectome Workbench (`wb_command`).
+- `analyse_parcels.py`.
+
+### Outputs
+For each subject, the script generates:
+
+- Three parcellated CIFTI files (`.pscalar.nii`).
+- Three affected-region reports (`.txt`).
+
+
+
+
+## Script 4 - Identification of Affected Cortical Regions
+
+### Aim
+`analyse_parcels.py` identifies cortical regions with dysconnectivity above a defined threshold.
+
+### The script:
+1. Loads parcel-level dysconnectivity values from a CIFTI file.
+2. Extracts the region labels from the corresponding cortical atlas.
+3. Identifies parcels meeting or exceeding the dysconnectivity threshold.
+4. Exports the selected parcel IDs, names, and dysconnectivity values.
+
+### Inputs Required
+- Parcellated CIFTI file (`.pscalar.nii`).
+- Corresponding atlas (`.dlabel.nii`).
+- Dysconnectivity threshold.
+
+| Flag | Required | Default | Description |
+|---|---|---|---|
+| `--map` | Yes | — | Parcellated CIFTI file |
+| `--atlas` | Yes | — | Cortical atlas label file |
+| `--threshold` | No | 0.0 | Minimum dysconnectivity value |
+| `--output` | Yes | — | Output text filename |
+
+### Output
+A text file with the parcel ID, region name, and dysconnectivity value for each parcel meeting the threshold.
+
+---
+
+## Script 5 - Subject-by-Parcel Matrix Construction
+
+### Aim
+`build_dysconnectivity.py` combines individual subject-level parcellated dysconnectomes into a single matrix for later statistical analysis.
+
+### The script:
+1. Loads all matching parcellated CIFTI files from a specified directory.
+2. Extracts subject IDs and parcel-level dysconnectivity values.
+3. Verifies consistent parcel ordering across subjects.
+4. Constructs a matrix with subjects as rows and cortical parcels as columns.
+5. Performs quality-control checks.
+6. Exports the resulting matrix as a CSV file.
+
+### Inputs Required
+- Directory containing parcellated CIFTI files (`.pscalar.nii`).
+- Filename prefix identifying the parcellation atlas.
+
+| Flag | Required | Default | Description |
+|---|---|---|---|
+| `--input-dir` | Yes | — | Directory containing parcellated files |
+| `--prefix` | No | `Glasser_` | Filename prefix before subject ID |
+| `--output` | Yes | — | Output CSV filename |
+
+### Output
+A CSV file containing a subject-by-parcel dysconnectivity matrix.
+
+Each row represents an individual subject, while each column represents a cortical parcel. The entries contain regional dysconnectivity values, providing a structured dataset for any further statistical modelling or investigation of clinical outcomes.
+
+
+
+
+
+
 ## Troubleshooting
 ### File not found errors
 Check that:
@@ -211,4 +351,7 @@ Connectivity averaging is done separately from lesion maps to allow:
 - Average group connectivity matrices to be reused.
 - Multiple lesions to be processed without needing to recompute averages.
 - Broader application amongst different subject groups.
+- Parcellation is performed separately using the Yeo 7, Yeo 17, and Glasser atlases.
+- A dysconnectivity threshold of 0.1 is used to filter affected regions in the processing script.
+- The subject by parcel matrix is then used to investigate any association between structural dysconnectivity and outcome.
 
