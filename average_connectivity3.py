@@ -6,29 +6,21 @@ import numpy as np
 from scipy.sparse import coo_matrix, save_npz
 
 
-# ============================================================
-# File loading
-# ============================================================
+# Load files
 
 def load_dot(path):
-    """
-    Load a plain-text numerical file.
-    """
+
     return np.loadtxt(path)
 
 
 def load_dot_gz(path):
-    """
-    Load a gzip-compressed plain-text numerical file.
-    """
+
     with gzip.open(path, "rt") as file:
         return np.loadtxt(file)
 
 
 def load_waytotal(path):
-    """
-    Load a single waytotal value.
-    """
+
     with open(path, "r") as file:
         value = float(file.read().strip())
 
@@ -146,17 +138,12 @@ def load_subject(subject_dir, matrix_folder):
     )
 
 
-# ============================================================
 # Coordinate handling
-# ============================================================
 
 def coord_key(coord):
-    """
-    Convert one coordinate row into a rounded tuple.
+    #Convert one coordinate row into a rounded tuple.
 
-    This allows matching equivalent tract-space coordinates
-    across subjects.
-    """
+
     return tuple(
         np.round(
             np.asarray(coord, dtype=float)
@@ -165,10 +152,9 @@ def coord_key(coord):
 
 
 def build_union_coordinate_space(all_coordinates):
-    """
-    Build a shared coordinate space containing every unique
-    tract-space coordinate found across all subjects.
-    """
+    #Build a shared coordinate space containing every unique
+    #tract-space coordinate found across all subjects.
+  
 
     union = set()
 
@@ -198,10 +184,8 @@ def build_subject_mappings(
     all_coordinates,
     coordinate_to_index,
 ):
-    """
-    Build one mapping per subject from the subject's local
-    tract-space coordinate index into the shared union space.
-    """
+    #Build one mapping per subject from the subject's local
+    #tract-space coordinate index into the shared union space.
 
     subject_mappings = []
 
@@ -221,9 +205,7 @@ def build_subject_mappings(
     return subject_mappings
 
 
-# ============================================================
-# Connectivity processing
-# ============================================================
+# Connectivity 
 
 def project_subject(
     connectivity,
@@ -336,8 +318,6 @@ def row_normalise(matrix):
     """
     Normalise every cortical seed row so that its non-zero
     connectivity values sum to one.
-
-    Rows containing only zeros remain zero.
     """
 
     row_sums = np.asarray(
@@ -367,14 +347,8 @@ def build_subject_matrices(
     n_union,
     waytotal,
 ):
-    """
-    Create both normalised matrix versions for one subject.
+    #Need both normalised matrix versions for one subject.
 
-    Returns:
-
-    1. Waytotal-normalised matrix
-    2. Waytotal-normalised and row-normalised matrix
-    """
 
     projected = project_subject(
         connectivity=connectivity,
@@ -399,26 +373,14 @@ def build_subject_matrices(
     )
 
 
-# ============================================================
 # Hemisphere processing
-# ============================================================
 
 def process_hemisphere(
     all_coordinates,
     all_connectivity,
     all_waytotals,
 ):
-    """
-    Process one hemisphere across all subjects.
 
-    This function:
-
-    1. Builds a shared union coordinate space
-    2. Maps every subject into that space
-    3. Applies waytotal normalisation
-    4. Applies row normalisation
-    5. Calculates group-average matrices
-    """
 
     n_subjects = len(all_coordinates)
 
@@ -548,9 +510,7 @@ def process_hemisphere(
     )
 
 
-# ============================================================
-# Main program
-# ============================================================
+# Main 
 
 def main():
     parser = argparse.ArgumentParser(

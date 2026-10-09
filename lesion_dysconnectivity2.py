@@ -12,35 +12,19 @@ from nibabel.processing import resample_from_to
 from scipy.sparse import load_npz
 
 
-# ============================================================
-# Reference-data loading
-# ============================================================
+#Load the reference data
 
 def load_reference_data(
     surface_reference,
     tractography_reference,
     matrix_folder,
 ):
-    """
-    Load cortical masks and surfaces from the original HCP
-    example-subject directory.
 
-    Load tract-space lookup images from the newer HCP FDT
-    matrices directory.
-
-    Example surface reference:
-        /home/data/MS_lesion_conn/HCP_example_subjects/100206
-
-    Example tractography reference:
-        /home/data/MS_lesion_conn/HCP_fdt_matrices/100206
-    """
 
     surface_reference = Path(surface_reference)
     tractography_reference = Path(tractography_reference)
 
-    # --------------------------------------------------------
-    # Cortical masks from HCP_example_subjects
-    # --------------------------------------------------------
+  
 
     atlas_L_path = (
         surface_reference
@@ -52,9 +36,7 @@ def load_reference_data(
         / "atlasroi.resampled.R.shape.gii"
     )
 
-    # --------------------------------------------------------
-    # Cortical surfaces from HCP_example_subjects
-    # --------------------------------------------------------
+  
 
     surface_L_path = (
         surface_reference
@@ -66,9 +48,6 @@ def load_reference_data(
         / "R.white.resampled.surf.gii"
     )
 
-    # --------------------------------------------------------
-    # Tract lookup images from HCP_fdt_matrices
-    # --------------------------------------------------------
 
     lookup_L_path = (
         tractography_reference
@@ -110,21 +89,21 @@ def load_reference_data(
             f"{missing_text}"
         )
 
-    # Load cortical masks.
+    #Load cortical masks
     atlas_L = nib.load(atlas_L_path)
     atlas_R = nib.load(atlas_R_path)
 
     mask_L = atlas_L.darrays[0].data.astype(bool)
     mask_R = atlas_R.darrays[0].data.astype(bool)
 
-    # Load surfaces to determine total vertex counts.
+    #Load surfaces for vertex counts
     surface_L = nib.load(surface_L_path)
     surface_R = nib.load(surface_R_path)
 
     n_vertices_L = surface_L.darrays[0].data.shape[0]
     n_vertices_R = surface_R.darrays[0].data.shape[0]
 
-    # Load tract lookup images.
+    #Load tract lookup images
     lookup_L = nib.load(lookup_L_path)
     lookup_R = nib.load(lookup_R_path)
 
@@ -138,27 +117,14 @@ def load_reference_data(
     )
 
 
-# ============================================================
-# Reference-subject mapping
-# ============================================================
+#Map to reference subject
 
 def load_reference_mapping(
     mapping_file,
     included_subjects_file,
     reference_subject_id,
 ):
-    """
-    Load the subject-to-union mapping for the chosen HCP
-    reference subject.
 
-    The included-subject file may contain either:
-        100206
-
-    or full paths such as:
-        /home/data/MS_lesion_conn/HCP_fdt_matrices/100206
-
-    In both cases, the final folder name is used as the subject ID.
-    """
 
     mapping_file = Path(mapping_file)
     included_subjects_file = Path(included_subjects_file)
@@ -228,19 +194,14 @@ def load_reference_mapping(
   
 
 
-# ============================================================
-# Lesion-to-tract-space mapping
-# ============================================================
+#Mapping the lesions to tract space 
 
 def lesion_to_union(
     lesion_img,
     lookup_img,
     subject_mapping,
 ):
-    """
-    Convert non-zero lesion voxels into union-space tract
-    coordinate indices.
-    """
+
 
     lesion_data = lesion_img.get_fdata()
 
@@ -260,7 +221,7 @@ def lesion_to_union(
         np.int64
     )
 
-    # Lesion and lookup images are on the same grid because the
+    #Lesion and lookup images are on the same grid because the
     # lesion has already been resampled to the lookup image.
     subject_indices = lookup[
         lesion_voxels[:, 0],
@@ -279,12 +240,12 @@ def lesion_to_union(
             dtype=np.int64,
         )
 
-    # FSL indices are one-based.
+    #FSL indices are one-based
     subject_indices = (
         subject_indices - 1
     )
 
-    # Remove indices outside the reference-subject mapping.
+    #Remove indices outside the reference-subject mapping
     valid_indices = (
         (subject_indices >= 0)
         & (subject_indices < len(subject_mapping))
@@ -316,17 +277,10 @@ def calculate_lesion_map(
     subject_mapping,
     hemisphere_name,
 ):
-    """
-    Calculate a cortical dysconnectivity map for one hemisphere.
 
-    If the lesion does not overlap tract-space locations for that
-    hemisphere, return a zero map rather than stopping the entire
-    bilateral analysis.
-    """
 
-    # Resample the lesion onto the exact grid of the tract-space
-    # lookup image. Nearest-neighbour interpolation preserves the
-    # binary/categorical lesion mask.
+    # Resample the lesion onto the tract space reference image
+
     lesion_resampled = resample_from_to(
         lesion_img,
         lookup_img,
@@ -377,9 +331,7 @@ def calculate_lesion_map(
     )
 
 
-# ============================================================
-# Surface expansion
-# ============================================================
+#Surface expansion
 
 def expand_to_surface(
     data,
@@ -387,7 +339,7 @@ def expand_to_surface(
     hemisphere_name,
 ):
     """
-    Expand cortical seed values to the full surface, placing
+    Expand cortical seed values to the full surface, putting
     zeros in medial-wall vertices.
     """
 
@@ -418,9 +370,7 @@ def expand_to_surface(
     return full_surface
 
 
-# ============================================================
-# CIFTI saving
-# ============================================================
+#Save as CIFTI
 
 def save_cifti(
     left_map,
@@ -430,9 +380,7 @@ def save_cifti(
     output,
     map_name,
 ):
-    """
-    Save the bilateral dysconnectivity map as a CIFTI dscalar.
-    """
+
 
     output = Path(output)
 
@@ -504,9 +452,7 @@ def save_cifti(
     )
 
 
-# ============================================================
-# Main program
-# ============================================================
+# Main 
 
 def main():
     parser = argparse.ArgumentParser(
@@ -632,9 +578,7 @@ def main():
 
     args = parser.parse_args()
 
-    # --------------------------------------------------------
-    # Load matrices
-    # --------------------------------------------------------
+  
 
     print("Loading connectivity matrices...")
 
@@ -656,9 +600,7 @@ def main():
         f"{group_average_R.shape}"
     )
 
-    # --------------------------------------------------------
-    # Load mappings
-    # --------------------------------------------------------
+
 
     print("Loading reference-subject mappings...")
 
@@ -674,9 +616,7 @@ def main():
         reference_subject_id=args.reference_subject_id,
     )
 
-    # --------------------------------------------------------
-    # Load surface and tractography references
-    # --------------------------------------------------------
+ 
 
     print("Loading reference data...")
 
@@ -709,9 +649,6 @@ def main():
         f"Right non-medial-wall vertices: {mask_R.sum()}"
     )
 
-    # --------------------------------------------------------
-    # Load lesion
-    # --------------------------------------------------------
 
     print("Loading lesion mask...")
 
@@ -739,9 +676,6 @@ def main():
         f"{np.count_nonzero(lesion_data)}"
     )
 
-    # --------------------------------------------------------
-    # Calculate dysconnectivity
-    # --------------------------------------------------------
 
     print("Calculating left hemisphere dysconnectivity...")
 
@@ -763,9 +697,7 @@ def main():
         hemisphere_name="right",
     )
 
-    # --------------------------------------------------------
-    # Expand maps to full cortical surfaces
-    # --------------------------------------------------------
+ 
 
     print("Expanding maps to full cortical surfaces...")
 
@@ -781,9 +713,7 @@ def main():
         hemisphere_name="Right",
     )
 
-    # --------------------------------------------------------
-    # Save CIFTI
-    # --------------------------------------------------------
+    # Save as CIFTI
 
     print("Saving bilateral CIFTI map...")
 

@@ -6,18 +6,9 @@ import numpy as np
 import pandas as pd
 
 
-# ============================================================
-# Load one pscalar file
-# ============================================================
 
+#Load the pscalar files
 def load_pscalar(pscalar_file):
-    """
-    Load one parcellated CIFTI scalar file.
-
-    Returns:
-        values       - one disconnectivity value per parcel
-        parcel_names - names of the parcels, if available
-    """
 
     img = nib.load(pscalar_file)
 
@@ -47,18 +38,9 @@ def load_pscalar(pscalar_file):
     return values.astype(float), parcel_names
 
 
-# ============================================================
-# Extract subject ID from filename
-# ============================================================
-
+#Get the subject ID from the file
 def get_subject_id(filename, prefix):
-    """
-    Extract subject ID from filenames such as:
 
-        Glasser_1005653.pscalar.nii
-
-    using prefix='Glasser_'.
-    """
 
     name = filename.name
 
@@ -86,16 +68,13 @@ def get_subject_id(filename, prefix):
     return subject_id
 
 
-# ============================================================
-# Build subject × parcel matrix
-# ============================================================
+#Build subject by parcel matrix
 
 def build_matrix(
     input_dir,
     prefix,
 ):
     """
-    Read all matching pscalar files and construct:
 
         rows    = subjects
         columns = Glasser parcels
@@ -185,14 +164,10 @@ def build_matrix(
     return dataframe
 
 
-# ============================================================
-# Quality-control summary
-# ============================================================
+#Checks before saving results
 
 def print_summary(dataframe):
-    """
-    Print simple checks before saving.
-    """
+
 
     parcel_columns = [
         column
@@ -254,9 +229,7 @@ def print_summary(dataframe):
     )
 
 
-# ============================================================
-# Main
-# ============================================================
+#Main
 
 def main():
 
