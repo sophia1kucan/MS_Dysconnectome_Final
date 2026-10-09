@@ -1,8 +1,3 @@
-# Averaging Connectivity and Mapping Dysconnectivity from Multiple Sclerosis Lesions
-## Author: Sophia Kucan
-## July 2026
-
-## Overview
 
 
 # Averaging Connectivity and Mapping Dysconnectivity from MS Lesions
